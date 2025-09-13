@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Difficulty Level</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #f5f5f5;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, p {
+            font-size: 1.4rem;
+            margin: 20px 0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-top: 40px;
+            color: #00ffc6;
+            text-shadow: 0 0 10px #00ffc6, 0 0 20px #00997a;
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 25px;
+            margin: 30px auto;
+            width: 320px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        select {
+            width: 90%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        select:focus {
+            box-shadow: 0 0 10px #00ffc6;
+        }
+
+        #displayText {
+            margin: 15px 0;
+            font-style: italic;
+            color: #d1f7ff;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00ffc6, #007bff);
+            color: #fff;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #00ffc6, 0 0 30px #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Choose Your Difficulty Level</h1>
+    <form id="difficultyForm">
+        <label for="myDropdown">Choose an option:</label>
+        <select id="myDropdown">
+            <option value="Casual">Casual</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Expert">Expert</option>
+        </select>
+
+        <p id="displayText">Select an option to see info.</p>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const form = document.getElementById("difficultyForm");
+        const dropdown = document.getElementById("myDropdown");
+        const display = document.getElementById("displayText");
+
+        dropdown.addEventListener("change", function() {
+            const value = dropdown.value;
+            
+            if (value === "Casual Mode") {
+                display.innerText = "You selected Casual Mode.";
+                display.innerText = "4 stocks available, run for 30 days, $1,000 starting budget, basic news.";
+
+            
+            } else if (value === "Expert Mode") {
+                display.innerText = "You selected Expert Mode.";
+                display.innerText = "8 stocks available, run for 30 days, $10,000 starting budget, news along with economic news modifiers.";
+
+            }
+        });
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            if (dropdown.value === "Casual") {
+                console.log("Redirecting to Casual page");
+                location.href = 'http://localhost:3000';
+            } else if (dropdown.value === "Intermediate") {
+                window.location.href = "intermediate.html";
+            } else if (dropdown.value === "Expert") {
+                window.location.href = "expert.html";
+            }
+        });
+    </script>
+</body>
+</html>

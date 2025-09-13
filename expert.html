@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Stock Market</title>
+  <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --card-bg: #2a2a4e;
+      --text-color: #e0e0ff;
+      --accent-color: #00d4ff;
+      --button-bg: #00d4ff;
+      --button-hover: #ff4081;
+      --table-header: #3a3a6e;
+      --table-row-odd: #2a2a4e;
+      --table-row-even: #22223b;
+      --error-color: #ff5252;
+      --news-bg: #16213e;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      --loading-bg: rgba(26, 26, 46, 0.9);
+      --loading-spinner: #00d4ff;
+    }
+
+    [data-theme="light"] {
+      --bg-color: #e6f0fa;
+      --card-bg: #ffffff;
+      --text-color: #1a1a2e;
+      --accent-color: #007bff;
+      --button-bg: #007bff;
+      --button-hover: #0056b3;
+      --table-header: #d4e6ff;
+      --table-row-odd: #ffffff;
+      --table-row-even: #f8f9fa;
+      --error-color: #dc3545;
+      --news-bg: #f1f8ff;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --loading-bg: rgba(230, 240, 250, 0.9);
+      --loading-spinner: #007bff;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--bg-color), var(--news-bg));
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+      position: relative;
+    }
+
+    h1, h2 {
+      color: var(--accent-color);
+      text-align: center;
+      margin: 15px 0;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    #dayDisplay, #budgetDisplay {
+      display: inline-block;
+      background: var(--card-bg);
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: var(--accent-color);
+      font-weight: bold;
+      box-shadow: var(--shadow);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    table {
+      width: 90%;
+      max-width: 1000px;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      background: var(--table-header);
+      font-weight: 600;
+      color: var(--text-color);
+      text-transform: uppercase;
+      font-size: 0.9rem;
+    }
+
+    tr:nth-child(odd) { background: var(--table-row-odd); }
+    tr:nth-child(even) { background: var(--table-row-even); }
+    tr:hover {
+      background: rgba(0, 212, 255, 0.2);
+      transition: background 0.2s;
+    }
+
+    button {
+      background: var(--button-bg);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.3s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }
+
+    button:hover {
+      background: var(--button-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    button:active { transform: translateY(0); }
+    button:disabled, button.loading {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #newsFeed, #economicNewsFeed, #predictionBox, #econPredictionBox {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: var(--news-bg);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+
+    #newsFeed div, #economicNewsFeed div, #predictionBox div, #econPredictionBox div {
+      margin: 10px 0;
+      padding: 12px;
+      background: var(--card-bg);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    #errorMessage {
+      color: var(--error-color);
+      text-align: center;
+      margin: 15px 0;
+      font-weight: 600;
+      font-size: 1rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--accent-color);
+      background: var(--card-bg);
+      color: var(--text-color);
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--button-hover);
+    }
+
+    label {
+      color: var(--text-color);
+      font-weight: 500;
+      margin-right: 10px;
+    }
+
+    #themeToggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--button-bg);
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--loading-bg);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    #loadingScreen.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--text-color);
+      border-top: 5px solid var(--loading-spinner);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    #loadingScreen p {
+      color: var(--text-color);
+      font-size: 1.2rem;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      table, #newsFeed, #economicNewsFeed, #predictionBox, #econPredictionBox {
+        width: 95%;
+      }
+      th, td { font-size: 13px; padding: 8px; }
+      button { font-size: 13px; padding: 6px 12px; }
+      #dayDisplay, #budgetDisplay { font-size: 14px; padding: 4px 8px; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.2rem; }
+      select, label { font-size: 13px; }
+      #loadingScreen p { font-size: 1rem; }
+      .spinner { width: 40px; height: 40px; border-width: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loadingScreen">
+    <div>
+      <div class="spinner"></div>
+      <p>Loading Stocks...</p>
+    </div>
+  </div>
+  <button id="themeToggle">Toggle Theme</button>
+  <h1>AI Stock Market</h1>
+  <h2>Day: <span id="dayDisplay"></span></h2>
+  <h2>Budget: $<span id="budgetDisplay"></span></h2>
+
+  <label for="DayDropdown">Move Day By:</label>
+  <select id="DayDropdown">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+  <button id="advanceButton">Advance Day(s)</button>
+  <div id="errorMessage"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Name</th><th>Price</th><th>Previous Day Price</th>
+        <th>Price Change</th><th>Volatility</th><th>Buy</th><th>Sell</th><th>Info</th>
+      </tr>
+    </thead>
+    <tbody id="stocks"></tbody>
+  </table>
+
+  <h2>Economic News</h2>
+  <div id="economicNewsFeed"></div>
+
+  <h2>Your Portfolio</h2>
+  <table>
+    <thead>
+      <tr><th>Ticker</th><th>Shares</th><th>Avg Purchase Price</th></tr>
+    </thead>
+    <tbody id="portfolioTable"></tbody>
+  </table>
+
+  <h2>News Feed</h2>
+  <div id="newsFeed"></div>
+
+  <button id="predictButton">Buy Insider Stock Prediction ($1000)</button>
+  <button id="econPredictButton">Buy Insider Economic Prediction ($2000)</button>
+  <div id="predictionBox"></div>
+  <div id="econPredictionBox"></div>
+
+  <script>
+    let stocks = [];
+    let portfolio = JSON.parse(localStorage.getItem("portfolio")) || {};
+    if (typeof portfolio !== "object" || Array.isArray(portfolio)) {
+      portfolio = {};
+      localStorage.setItem("portfolio", JSON.stringify(portfolio));
+    }
+    let budget = parseFloat(localStorage.getItem("budget")) || 8000;
+    if (isNaN(budget) || budget < 0) {
+      budget = 8000;
+      localStorage.setItem("budget", budget);
+    }
+    let currentDay = parseInt(localStorage.getItem("currentDay")) || 1;
+    localStorage.setItem("currentDay", currentDay);
+
+    let avgPrices = JSON.parse(localStorage.getItem("avgPrices")) || {};
+    let activityLog = JSON.parse(localStorage.getItem("activityLog")) || [];
+    let activeEconEffects = JSON.parse(localStorage.getItem("activeEconEffects") || "[]");
+
+    const updateBudgetDisplay = () => document.getElementById("budgetDisplay").textContent = budget.toFixed(2);
+    const updateDayDisplay = () => document.getElementById("dayDisplay").textContent = currentDay;
+    const showError = (message) => document.getElementById("errorMessage").textContent = message;
+    const clearError = () => document.getElementById("errorMessage").textContent = "";
+
+    const showLoading = () => {
+      document.getElementById("loadingScreen").classList.add("active");
+    };
+
+    const hideLoading = () => {
+      document.getElementById("loadingScreen").classList.remove("active");
+    };
+
+    const displayPortfolio = () => {
+      const tbody = document.getElementById("portfolioTable");
+      tbody.innerHTML = "";
+      for (const ticker in portfolio) {
+        const shares = portfolio[ticker];
+        const avgPrice = avgPrices[ticker] ? avgPrices[ticker].toFixed(2) : "N/A";
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${ticker}</td><td>${shares}</td><td>$${avgPrice}</td>`;
+        tbody.appendChild(row);
+      }
+    };
+
+    updateBudgetDisplay();
+    updateDayDisplay();
+    displayPortfolio();
+
+    async function loadStocks() {
+      showLoading();
+      clearError();
+      const savedStocks = localStorage.getItem("stocks");
+      if (savedStocks) {
+        stocks = JSON.parse(savedStocks);
+        stocks.forEach(s => s.news = s.news || []);
+        displayStocks();
+        hideLoading();
+      } else {
+        try {
+          const res = await fetch("/stocks");
+          if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+          stocks = await res.json();
+          stocks.forEach(s => s.news = s.news || []);
+          localStorage.setItem("stocks", JSON.stringify(stocks));
+          displayStocks();
+          hideLoading();
+        } catch (err) {
+          console.error("Failed to load stocks:", err);
+          showError("Failed to load stocks. Please try again later.");
+          hideLoading();
+          return;
+        }
+      }
+    }
+
+    function displayStocks(newNews = []) {
+      const tbody = document.getElementById("stocks");
+      tbody.innerHTML = "";
+      const newsFeed = document.getElementById("newsFeed");
+      newsFeed.innerHTML = "";
+
+      stocks.forEach(stock => {
+        const price = typeof stock.price === "number" ? `$${stock.price.toFixed(2)}` : "N/A";
+        const prev = typeof stock.previousDayPrice === "number" ? `$${stock.previousDayPrice.toFixed(2)}` : "N/A";
+        const change = typeof stock.priceChange === "number" ? `${stock.priceChange.toFixed(2)}%` : "N/A";
+        const vol = typeof stock.volatility === "number" ? `${stock.volatility.toFixed(2)}%` : "N/A";
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${stock.ticker || "N/A"}</td>
+          <td>${stock.name || "N/A"}</td>
+          <td>${price}</td>
+          <td>${prev}</td>
+          <td>${change}</td>
+          <td>${vol}</td>
+          <td><button onclick="buyStock('${stock.ticker}', ${stock.price})">Buy</button></td>
+          <td><button onclick="sellStock('${stock.ticker}', ${stock.price})">Sell</button></td>
+          <td><button onclick="showStockInfo('${stock.ticker}')">Info</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      newNews.forEach(n => {
+        const div = document.createElement("div");
+        div.innerHTML = `<strong>Day ${n.day} - ${n.ticker} - ${n.headline}</strong>: ${n.description}`;
+        newsFeed.appendChild(div);
+      });
+
+      const econDiv = document.getElementById("economicNewsFeed");
+      econDiv.innerHTML = "";
+      activeEconEffects.forEach(e => {
+        const div = document.createElement("div");
+        div.textContent = `Sector: ${e.sector} - ${e.headline} (Days left: ${e.daysLeft}, Impact: ${e.direction})`;
+        econDiv.appendChild(div);
+      });
+    }
+
+    function showStockInfo(ticker) {
+      const stock = stocks.find(s => s.ticker === ticker);
+      if (!stock) return alert("Stock info not found!");
+      alert(`Sector: ${stock.sector}\nInfo: ${stock.tidbit}`);
+    }
+
+    function buyStock(ticker, price) {
+      const qty = parseInt(prompt("Enter number of shares to buy:"));
+      if (!qty || qty < 1) { alert("Invalid number!"); return; }
+      const totalCost = qty * price;
+      if (budget < totalCost) { alert("Not enough budget!"); return; }
+      budget -= totalCost;
+      portfolio[ticker] = (portfolio[ticker] || 0) + qty;
+      avgPrices[ticker] = ((avgPrices[ticker] || 0) * (portfolio[ticker] - qty) + price * qty) / portfolio[ticker];
+
+      activityLog.push({
+        day: currentDay,
+        type: "buy",
+        ticker: ticker,
+        quantity: qty,
+        price: price,
+        totalCost: totalCost,
+        description: `Bought ${qty} shares of ${ticker} at $${price.toFixed(2)} each`
+      });
+
+      localStorage.setItem("budget", budget);
+      localStorage.setItem("portfolio", JSON.stringify(portfolio));
+      localStorage.setItem("avgPrices", JSON.stringify(avgPrices));
+      localStorage.setItem("activityLog", JSON.stringify(activityLog));
+      updateBudgetDisplay();
+      displayPortfolio();
+      alert(`Bought ${qty} shares of ${ticker}.`);
+    }
+
+    function sellStock(ticker, price) {
+      const qty = parseInt(prompt("Enter number of shares to sell:"));
+      if (!qty || qty < 1) { alert("Invalid number!"); return; }
+      if (!portfolio[ticker] || portfolio[ticker] < qty) { alert("Not enough shares!"); return; }
+      portfolio[ticker] -= qty;
+      const totalProceeds = price * qty;
+      budget += totalProceeds;
+      if (portfolio[ticker] === 0) { delete portfolio[ticker]; delete avgPrices[ticker]; }
+
+      activityLog.push({
+        day: currentDay,
+        type: "sell",
+        ticker: ticker,
+        quantity: qty,
+        price: price,
+        totalProceeds: totalProceeds,
+        description: `Sold ${qty} shares of ${ticker} at $${price.toFixed(2)} each`
+      });
+
+      localStorage.setItem("budget", budget);
+      localStorage.setItem("portfolio", JSON.stringify(portfolio));
+      localStorage.setItem("avgPrices", JSON.stringify(avgPrices));
+      localStorage.setItem("activityLog", JSON.stringify(activityLog));
+      updateBudgetDisplay();
+      displayPortfolio();
+      alert(`Sold ${qty} shares of ${ticker}.`);
+    }
+
+    document.getElementById("predictButton").addEventListener("click", async () => {
+      if (budget < 1000) { alert("Not enough budget!"); return; }
+      budget -= 1000; localStorage.setItem("budget", budget); updateBudgetDisplay();
+      try {
+        const res = await fetch("/predictNews", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({stocks, currentDay}) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const prediction = await res.json();
+        let predictions = JSON.parse(localStorage.getItem("predictions") || "[]");
+        predictions.push(prediction); localStorage.setItem("predictions", JSON.stringify(predictions));
+        const div = document.createElement("div");
+        div.textContent = `${prediction.ticker} may ${prediction.direction} around Day ${prediction.day}`;
+        document.getElementById("predictionBox").appendChild(div);
+        alert("Stock prediction purchased!");
+      } catch(err) {
+        console.error(err);
+        alert("Failed to fetch prediction.");
+      }
+    });
+
+    document.getElementById("econPredictButton").addEventListener("click", async () => {
+      if (budget < 2000) { alert("Not enough budget!"); return; }
+      budget -= 2000; localStorage.setItem("budget", budget); updateBudgetDisplay();
+      try {
+        const res = await fetch("/predictEconEvent", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ currentDay, activeEconEffects })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const prediction = await res.json();
+        const div = document.createElement("div");
+        div.textContent = `Predicted: ${prediction.headline} on Day ${prediction.day} affecting ${prediction.sector} (Impact: ${prediction.direction})`;
+        document.getElementById("econPredictionBox").appendChild(div);
+        activityLog.push({
+          day: currentDay,
+          type: "economic_prediction",
+          sector: prediction.sector,
+          headline: prediction.headline,
+          predictedDay: prediction.day,
+          daysLeft: prediction.daysLeft,
+          direction: prediction.direction,
+          description: `Predicted economic event for ${prediction.sector} on Day ${prediction.day} with ${prediction.direction} impact`
+        });
+        localStorage.setItem("activityLog", JSON.stringify(activityLog));
+        alert("Economic event prediction purchased!");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to fetch economic event prediction.");
+      }
+    });
+
+    async function advanceDays(days) {
+      clearError();
+      const advanceButton = document.getElementById("advanceButton");
+      advanceButton.disabled = true; advanceButton.classList.add("loading");
+
+      try {
+        let predictions = JSON.parse(localStorage.getItem("predictions") || "[]");
+        predictions = predictions.filter(p => p.day > currentDay);
+        localStorage.setItem("predictions", JSON.stringify(predictions));
+
+        const res = await fetch("/simulateDays", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({stocks, days, predictions, currentDay, activeEconEffects})
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { simulated, newEconEvents } = await res.json();
+        const newNews = [];
+
+        stocks.forEach(stock => {
+          const history = simulated.filter(s => s.ticker === stock.ticker);
+          if (!history.length) return;
+          let prevPrice = stock.price || 0;
+          history.forEach(h => {
+            const isEarningsDay = h.day % 10 === 0;
+            let priceChange = ((Math.random() - 0.5) * 2 * (stock.volatility / 100)) * stock.price;
+            if (h.headline && !isEarningsDay) priceChange += (Math.random() - 0.5) * 0.04 * stock.price;
+            if (isEarningsDay) priceChange += ((Math.random() > 0.5 ? 0.2 : -0.2) * stock.price);
+
+            activeEconEffects.forEach(e => {
+              if (e.sector === stock.sector) {
+                const impact = e.direction === "positive" ? 0.075 : -0.075;
+                priceChange += impact * stock.price;
+              }
+            });
+
+            stock.previousDayPrice = prevPrice;
+            stock.price = Math.max(0.1, stock.price + priceChange);
+            stock.priceChange = stock.previousDayPrice ? ((stock.price - stock.previousDayPrice) / stock.previousDayPrice * 100) : 0;
+            prevPrice = stock.price;
+
+            if (h.day >= currentDay + 1 && h.day <= currentDay + days) {
+              const newsObj = { day: h.day, headline: h.headline || "No headline", description: h.description || "No description" };
+              stock.news.push(newsObj);
+              newNews.push({ ...newsObj, ticker: stock.ticker });
+              activityLog.push({ day: h.day, ticker: stock.ticker, price: stock.price, volatility: stock.volatility, headline: newsObj.headline, description: newsObj.description });
+            }
+          });
+        });
+
+        if (newEconEvents && Array.isArray(newEconEvents)) {
+          newEconEvents.forEach(event => {
+            activeEconEffects.push(event);
+            activityLog.push({
+              day: event.startDay || currentDay + 1,
+              type: "economic",
+              sector: event.sector,
+              headline: event.headline,
+              daysLeft: event.daysLeft,
+              direction: event.direction,
+              description: `Economic event activated affecting ${event.sector} with ${event.direction} impact`
+            });
+          });
+        }
+
+        activeEconEffects.forEach(e => e.daysLeft -= days);
+        activeEconEffects = activeEconEffects.filter(e => e.daysLeft > 0);
+        localStorage.setItem("activeEconEffects", JSON.stringify(activeEconEffects));
+
+        localStorage.setItem("activityLog", JSON.stringify(activityLog));
+        currentDay += days;
+        localStorage.setItem("stocks", JSON.stringify(stocks));
+        localStorage.setItem("currentDay", currentDay);
+
+        if (currentDay >= 30) window.location.href = "gameOver_expert.html";
+
+        displayStocks(newNews);
+        updateDayDisplay();
+      } catch (err) {
+        console.error(err);
+        showError("Failed to simulate days.");
+      } finally {
+        advanceButton.disabled = false;
+        advanceButton.classList.remove("loading");
+      }
+    }
+
+    document.getElementById("advanceButton").addEventListener("click", () => {
+      const days = parseInt(document.getElementById("DayDropdown").value);
+      advanceDays(days);
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      document.body.dataset.theme = document.body.dataset.theme === "light" ? "" : "light";
+      localStorage.setItem("theme", document.body.dataset.theme || "dark");
+    });
+
+    if (localStorage.getItem("theme") === "light") {
+      document.body.dataset.theme = "light";
+    }
+
+    loadStocks();
+  </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fast Mode</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    h1, h2 {
+      margin: 10px 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 80%;
+      margin: 20px auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    #newsFeed {
+      width: 60%;
+      margin: 20px auto;
+      text-align: left;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #errorMessage {
+      color: red;
+      margin: 10px;
+    }
+
+    button {
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #555;
+    }
+
+    .loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* Dark mode */
+    .dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    .dark-mode table {
+      background-color: #1e1e1e;
+    }
+
+    .dark-mode table th {
+      background-color: #222;
+    }
+
+    .dark-mode tr:nth-child(even) {
+      background-color: #1e1e1e;
+    }
+
+    .dark-mode tr:hover {
+      background-color: #2a2a2a;
+    }
+
+    .dark-mode #newsFeed {
+      background-color: #1e1e1e;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Stock Market</h1>
+  <button id="toggleDarkMode">Toggle Dark Mode</button>
+
+  <h2>Day: <span id="dayDisplay"></span></h2>
+  <h2>Budget: $<span id="budgetDisplay"></span></h2>
+
+  <label for="DayDropdown">Move Day By:</label>
+  <select id="DayDropdown">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+  <button id="advanceButton">Advance Day(s)</button>
+
+  <div id="errorMessage"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Name</th><th>Price</th><th>Previous Day Price</th>
+        <th>Price Change</th><th>Volatility</th><th>Buy</th><th>Sell</th>
+      </tr>
+    </thead>
+    <tbody id="stocks"></tbody>
+  </table>
+
+  <h2>Your Portfolio</h2>
+  <table>
+    <thead>
+      <tr><th>Ticker</th><th>Shares</th><th>Avg Purchase Price</th></tr>
+    </thead>
+    <tbody id="portfolioTable"></tbody>
+  </table>
+
+  <h2>News Feed</h2>
+  <div id="newsFeed"></div>
+
+  <button id="predictButton">Buy Insider Stock Info Prediction ($200)</button>
+  <div id="predictionBox"></div>
+
+<script>
+let stocks = [];
+let portfolio = JSON.parse(localStorage.getItem("portfolio")) || {};
+if (typeof portfolio !== "object" || Array.isArray(portfolio)) {
+  portfolio = {};
+  localStorage.setItem("portfolio", JSON.stringify(portfolio));
+}
+let budget = parseFloat(localStorage.getItem("budget")) || 1000;
+if (isNaN(budget) || budget < 0) {
+  budget = 1000;
+  localStorage.setItem("budget", budget);
+}
+let currentDay = parseInt(localStorage.getItem("currentDay")) || 1;
+localStorage.setItem("currentDay", currentDay);
+
+let avgPrices = JSON.parse(localStorage.getItem("avgPrices")) || {};
+let activityLog = JSON.parse(localStorage.getItem("activityLog")) || [];
+
+const updateBudgetDisplay = () => document.getElementById("budgetDisplay").textContent = budget.toFixed(2);
+const updateDayDisplay = () => document.getElementById("dayDisplay").textContent = currentDay;
+const showError = (message) => document.getElementById("errorMessage").textContent = message;
+const clearError = () => document.getElementById("errorMessage").textContent = "";
+
+const displayPortfolio = () => {
+  const tbody = document.getElementById("portfolioTable");
+  tbody.innerHTML = "";
+  for (const ticker in portfolio) {
+    const shares = portfolio[ticker];
+    const avgPrice = avgPrices[ticker] ? avgPrices[ticker].toFixed(2) : "N/A";
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${ticker}</td><td>${shares}</td><td>$${avgPrice}</td>`;
+    tbody.appendChild(row);
+  }
+};
+
+updateBudgetDisplay();
+updateDayDisplay();
+displayPortfolio();
+
+async function loadStocks() {
+  clearError();
+  const savedStocks = localStorage.getItem("stocks");
+  if (savedStocks) {
+    stocks = JSON.parse(savedStocks);
+    stocks.forEach(s => s.news = s.news || []);
+  } else {
+    try {
+      const res = await fetch("/stocks");
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      stocks = await res.json();
+      stocks.forEach(s => s.news = s.news || []);
+      localStorage.setItem("stocks", JSON.stringify(stocks));
+    } catch (err) {
+      console.error("Failed to load stocks:", err);
+      showError("Failed to load stocks. Please try again later.");
+      return;
+    }
+  }
+  displayStocks();
+}
+
+function displayStocks(newNews = []) {
+  const tbody = document.getElementById("stocks");
+  tbody.innerHTML = "";
+  const newsFeed = document.getElementById("newsFeed");
+  newsFeed.innerHTML = "";
+
+  stocks.forEach(stock => {
+    const price = typeof stock.price === "number" ? `$${stock.price.toFixed(2)}` : "N/A";
+    const prev = typeof stock.previousDayPrice === "number" ? `$${stock.previousDayPrice.toFixed(2)}` : "N/A";
+    const change = typeof stock.priceChange === "number" ? `${stock.priceChange.toFixed(2)}%` : "N/A";
+    const vol = typeof stock.volatility === "number" ? `${stock.volatility.toFixed(2)}%` : "N/A";
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${stock.ticker || "N/A"}</td>
+      <td>${stock.name || "N/A"}</td>
+      <td>${price}</td>
+      <td>${prev}</td>
+      <td>${change}</td>
+      <td>${vol}</td>
+      <td><button onclick="buyStock('${stock.ticker}', ${stock.price})">Buy</button></td>
+      <td><button onclick="sellStock('${stock.ticker}', ${stock.price})">Sell</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  newNews.forEach(n => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>Day ${n.day} - ${n.ticker} - ${n.headline}</strong>: ${n.description}`;
+    newsFeed.appendChild(div);
+  });
+}
+
+function buyStock(ticker, price) {
+  if (!ticker || typeof price !== "number" || price <= 0) { alert("Invalid stock data!"); return; }
+  if (budget >= price) {
+    budget -= price;
+    localStorage.setItem("budget", budget);
+
+    portfolio[ticker] = (portfolio[ticker] || 0) + 1;
+    avgPrices[ticker] = ((avgPrices[ticker] || 0) * (portfolio[ticker]-1) + price) / portfolio[ticker];
+    localStorage.setItem("avgPrices", JSON.stringify(avgPrices));
+    localStorage.setItem("portfolio", JSON.stringify(portfolio));
+
+    updateBudgetDisplay();
+    displayPortfolio();
+    alert(`Bought 1 share of ${ticker}. You now own ${portfolio[ticker]} shares.`);
+  } else { alert("Not enough budget!"); }
+}
+
+function sellStock(ticker, price) {
+  if (!ticker || typeof price !== "number" || price <= 0) { alert("Invalid stock data!"); return; }
+
+  if (portfolio[ticker] && portfolio[ticker] > 0) {
+    portfolio[ticker] -= 1;
+    budget += price;
+
+    if (portfolio[ticker] === 0) { delete portfolio[ticker]; delete avgPrices[ticker]; }
+
+    localStorage.setItem("portfolio", JSON.stringify(portfolio));
+    localStorage.setItem("avgPrices", JSON.stringify(avgPrices));
+    localStorage.setItem("budget", budget);
+
+    updateBudgetDisplay();
+    displayPortfolio();
+    alert(`Sold 1 share of ${ticker}. You now own ${portfolio[ticker] || 0} shares.`);
+  } else { alert("You don't own any shares to sell!"); }
+}
+
+// ------------------ Prediction Button ------------------
+document.getElementById("predictButton").addEventListener("click", async () => {
+  if (budget < 200) { alert("Not enough budget for prediction!"); return; }
+  budget -= 200;
+  localStorage.setItem("budget", budget);
+  updateBudgetDisplay();
+
+  try {
+    const res = await fetch("/predictNews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stocks, currentDay })
+    });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const prediction = await res.json();
+
+    let predictions = JSON.parse(localStorage.getItem("predictions") || "[]");
+    predictions.push(prediction);
+    localStorage.setItem("predictions", JSON.stringify(predictions));
+
+    const box = document.getElementById("predictionBox");
+    const div = document.createElement("div");
+    div.textContent = `${prediction.ticker} may ${prediction.direction} around Day ${prediction.day}`;
+    box.appendChild(div);
+
+    alert("Prediction purchased! Check Market Predictions below.");
+  } catch (err) {
+    console.error("Prediction error:", err);
+    alert("Failed to fetch prediction. Try again later.");
+  }
+});
+
+// ------------------ Advance Days ------------------
+async function advanceDays(days) {
+  clearError();
+  const advanceButton = document.getElementById("advanceButton");
+  advanceButton.disabled = true;
+  advanceButton.classList.add("loading");
+
+  try {
+    let predictions = JSON.parse(localStorage.getItem("predictions") || "[]");
+    predictions = predictions.filter(p => p.day > currentDay);
+    localStorage.setItem("predictions", JSON.stringify(predictions));
+
+    const res = await fetch("/simulateDays", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stocks, days, predictions, currentDay })
+    });
+
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const simulated = await res.json();
+    const newNews = [];
+
+    stocks.forEach(stock => {
+      const history = simulated.filter(s => s.ticker === stock.ticker);
+      if (!history.length) return;
+
+      let prevPrice = stock.price || 0;
+
+      history.forEach(h => {
+        const isEarningsDay = h.day % 10 === 0;
+        let priceChange = 0;
+
+        stock.previousDayPrice = prevPrice;
+        stock.price = h.price;
+
+        // Apply volatility to daily price
+        priceChange = ((Math.random() - 0.5) * 2 * (stock.volatility / 100)) * stock.price;
+
+        // Apply news effect
+        if (h.headline && !isEarningsDay) {
+          priceChange += (Math.random() - 0.5) * 2 * 0.02 * stock.price;
+        }
+
+        // Apply earnings effect
+        if (isEarningsDay) {
+          priceChange += ((Math.random() > 0.5 ? 0.2 : -0.2) * stock.price);
+        }
+
+        stock.price = Math.max(0.1, stock.price + priceChange);
+        stock.priceChange = stock.previousDayPrice ? ((stock.price - stock.previousDayPrice) / stock.previousDayPrice * 100) : 0;
+        prevPrice = stock.price;
+
+        if (h.day >= currentDay + 1 && h.day <= currentDay + days) {
+          const newsObj = { day: h.day, headline: h.headline || "No headline", description: h.description || "No description" };
+          stock.news.push(newsObj);
+          newNews.push({ ...newsObj, ticker: stock.ticker });
+
+          activityLog.push({ day: h.day, ticker: stock.ticker, price: stock.price, headline: h.headline || "No headline", description: h.description || "No description" });
+        }
+      });
+    });
+
+    localStorage.setItem("activityLog", JSON.stringify(activityLog));
+    currentDay += days;
+    localStorage.setItem("stocks", JSON.stringify(stocks));
+    localStorage.setItem("currentDay", currentDay);
+
+    if (currentDay >= 30) window.location.href = "gameOver_casual.html";
+
+    displayStocks(newNews);
+    updateDayDisplay();
+  } catch (err) {
+    console.error("Failed to simulate days:", err);
+    showError("Failed to simulate days. Please try again later.");
+  } finally {
+    advanceButton.disabled = false;
+    advanceButton.classList.remove("loading");
+  }
+}
+document.getElementById("advanceButton").addEventListener("click", () => {
+  const days = parseInt(document.getElementById("DayDropdown").value);
+  advanceDays(days);
+});
+
+loadStocks();
+
+
+document.getElementById("toggleDarkMode").addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+});
+</script>
+</body>
+</html>

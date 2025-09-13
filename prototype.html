@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Stock Simulation</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    #price { font-size: 2em; color: green; }
+  </style>
+</head>
+<body>
+  <h1>📈 AI Stock Simulation</h1>
+  <p>Current Price: <span id="price">$100.00</span></p>
+
+  <script>
+    let price = 100; // starting price
+    const priceEl = document.getElementById("price");
+
+    function simulateDay() {
+      // random change between -5 and +5
+      let change = (Math.random() - 0.5) * 10;
+      price = Math.max(1, price + change);
+
+      priceEl.textContent = `$${price.toFixed(2)}`;
+      priceEl.style.color = change >= 0 ? "green" : "red";
+    }
+
+    // run simulation every second
+    setInterval(simulateDay, 1000);
+  </script>
+</body>
+</html>

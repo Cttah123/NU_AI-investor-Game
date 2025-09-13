@@ -1,0 +1,6 @@
+body { font-family: Arial; text-align: center; margin-top: 20px; }
+table { margin: auto; border-collapse: collapse; width: 80%; }
+th, td { border: 1px solid #ccc; padding: 8px; }
+#newsFeed, #economicNewsFeed { width: 60%; margin: 20px auto; text-align: left; }
+#errorMessage { color: red; margin: 10px; }
+.loading { opacity: 0.5; pointer-events: none; }

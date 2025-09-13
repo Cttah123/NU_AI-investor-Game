@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>AML_AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #f5f5f5;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin: 15px 0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-top: 40px;
+            color: #00ffc6;
+            text-shadow: 0 0 10px #00ffc6, 0 0 20px #00997a;
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            margin: 30px auto;
+            width: 300px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 10px #00ffc6;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00ffc6, #007bff);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #00ffc6, 0 0 30px #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Investment Game!</h1>
+
+    <p>In this game, you will be given a sum of money to invest in a stock market simulation and learn in real-time. Your goal is to maximize your returns by making smart investment decisions.</p>
+    <p>Please put in your username:</p>
+
+    <form id="clientform">
+        <input type="text" id="username" name="username" placeholder="Enter your username">
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script src="saveName.js"></script>
+</body>
+</html>

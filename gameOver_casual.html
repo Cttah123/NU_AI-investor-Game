@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Over - AI Stock Market</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    #summary { max-width: 700px; margin: auto; text-align: left; border: 1px solid #ccc; padding: 15px; }
+    #finalBudget { font-size: 20px; font-weight: bold; margin: 20px 0; }
+    table { margin: 20px auto; border-collapse: collapse; width: 70%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+
+    .analysis-box {
+      background: #f9f9f9;
+      border-left: 6px solid #4caf50;
+      padding: 1rem 1.5rem;
+      margin-top: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      display: none; /* hidden by default */
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    .analysis-box h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      color: #333;
+    }
+
+    .analysis-box p {
+      font-size: 1rem;
+      color: #444;
+      white-space: pre-line; /* keeps AI line breaks */
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Over</h1>
+  <h2>Your Run Has Ended</h2>
+  <div id="finalBudget"></div>
+
+  <h2>Final Portfolio</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Shares</th>
+        <th>Avg Purchase Price</th>
+        <th>Total Value</th>
+      </tr>
+    </thead>
+    <tbody id="portfolioTable"></tbody>
+  </table>
+
+  <!-- AI Analysis Box -->
+  <div id="analysis-box" class="analysis-box">
+    <h2>📊 Performance Analysis</h2>
+    <p id="analysis-text">Analyzing your performance...</p>
+  </div>
+
+  <script>
+  async function analyzePerformance() {
+    const activityLog = JSON.parse(localStorage.getItem("activityLog")) || [];
+    const portfolio = JSON.parse(localStorage.getItem("portfolio")) || {};
+    const budget = parseFloat(localStorage.getItem("budget")) || 0;
+    const avgPrices = JSON.parse(localStorage.getItem("avgPrices")) || {};
+    const stocks = JSON.parse(localStorage.getItem("stocks")) || [];
+
+    // Show final budget
+    document.getElementById("finalBudget").textContent = `Final Budget: $${budget.toFixed(2)}`;
+
+    // Show final portfolio
+    const tbody = document.getElementById("portfolioTable");
+    tbody.innerHTML = "";
+    for (const ticker in portfolio) {
+      const shares = portfolio[ticker];
+      const avgPrice = avgPrices[ticker] ? avgPrices[ticker].toFixed(2) : "N/A";
+
+      const stock = stocks.find(s => s.ticker === ticker);
+      const currentPrice = stock ? stock.price : avgPrices[ticker] || 0;
+      const totalValue = shares * currentPrice;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${ticker}</td>
+        <td>${shares}</td>
+        <td>$${avgPrice}</td>
+        <td>$${totalValue.toFixed(2)}</td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    // Prepare data for AI
+    const logSummary = JSON.stringify(activityLog.slice(-100));
+
+    try {
+      const res = await fetch("/analyzePerformance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ log: logSummary, portfolio, budget })
+      });
+
+      if (!res.ok) {
+        document.getElementById("analysis-text").textContent = "Failed to analyze performance.";
+        document.getElementById("analysis-box").style.display = "block";
+        return;
+      }
+
+      const data = await res.json();
+      document.getElementById("analysis-text").textContent = data.analysis;
+      document.getElementById("analysis-box").style.display = "block";
+    } catch (err) {
+      console.error(err);
+      document.getElementById("analysis-text").textContent = "Error analyzing performance.";
+      document.getElementById("analysis-box").style.display = "block";
+    }
+  }
+
+  analyzePerformance();
+  </script>
+</body>
+</html>
